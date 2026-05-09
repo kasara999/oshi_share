@@ -80,7 +80,37 @@ CREATE INDEX idx_matches_card_id ON matches (card_id);
 
 
 -- ================================================================
--- 3. claim_random_card 関数（原子的マッチング処理）
+-- 3. Row Level Security (RLS)
+-- ================================================================
+--
+-- 【RLS とは】
+--   「誰が・どのデータに・何ができるか」をDB側で制御する仕組み。
+--   有効化するだけで anon キーからのアクセスを全ブロックできる。
+--   ポリシーを追加した操作だけ許可される。
+
+-- cards: RLS有効化（anon は一切アクセス不可 = ポリシーなし）
+-- すべての操作は server.ts の service_role キー経由で行う
+ALTER TABLE cards ENABLE ROW LEVEL SECURITY;
+
+-- matches: RLS有効化
+ALTER TABLE matches ENABLE ROW LEVEL SECURITY;
+
+-- matches だけ anon の SELECT を許可（Realtime 購読に必要）
+CREATE POLICY "anon_can_read_matches" ON matches
+  FOR SELECT TO anon USING (true);
+
+-- Storage: 画像のアップロード・表示を anon に許可
+CREATE POLICY "anon_can_upload_images"
+  ON storage.objects FOR INSERT TO anon
+  WITH CHECK (bucket_id = 'card-images');
+
+CREATE POLICY "public_can_read_images"
+  ON storage.objects FOR SELECT TO anon
+  USING (bucket_id = 'card-images');
+
+
+-- ================================================================
+-- 4. claim_random_card 関数（原子的マッチング処理）
 -- ================================================================
 --
 -- 【なぜ関数にするか】
@@ -135,23 +165,8 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- 4. pg_cron による期限切れカードの自動クリーンアップ
 -- ================================================================
 --
--- 【pg_cron とは】
---   PostgreSQL 内で定期的に SQL を実行できる拡張機能。
---   Supabase では Extensions メニューから有効化できる。
---
--- ★ pg_cron を Supabase ダッシュボードで有効化してから実行すること ★
-
--- 毎日夜3時（UTC）に期限切れカードを expired に更新する
-SELECT cron.schedule(
-  'expire-old-cards',                    -- ジョブの名前
-  '0 3 * * *',                           -- cron 式: 毎日 03:00 UTC
-  $$
-    UPDATE cards
-    SET status = 'expired'
-    WHERE status = 'waiting'
-      AND expires_at < now();
-  $$
-);
+-- ★ このセクションは supabase/cron.sql に分離した ★
+-- pg_cron を Extensions で有効化してから cron.sql を実行すること
 
 
 -- ================================================================
