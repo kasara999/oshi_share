@@ -1,10 +1,10 @@
-"use client";
+'use client';
 
-import React, { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
-import { useSenderStore } from "@/store/senderStore";
-import CardDisplay from "@/components/CardDisplay";
-import { Button } from "@/components/ui/button";
+import React, { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { useSenderStore } from '@/store/senderStore';
+import CardDisplay from '@/components/CardDisplay';
+import { Button } from '@/components/ui/button';
 
 export default function ReceivePage() {
   const router = useRouter();
@@ -18,17 +18,19 @@ export default function ReceivePage() {
     setLoading(true);
     setMessage(null);
     try {
-      const res = await fetch("/api/match", {
-        method: "POST",
-        headers: { "X-Recipient-Token": token },
+      const res = await fetch('/api/match', {
+        method: 'POST',
+        headers: { 'X-Recipient-Token': token },
       });
       const data = await res.json();
       if (!res.ok) {
-        setMessage(data?.error || "マッチングに失敗しました");
+        setMessage(data?.error || 'マッチングに失敗しました');
         return;
       }
       if (!data || !data.match_id) {
-        setMessage("現在プールにカードがありません。時間をおいて試してください。");
+        setMessage(
+          '現在プールにカードがありません。時間をおいて試してください。',
+        );
         return;
       }
       setCard(data.card || null);
@@ -37,7 +39,7 @@ export default function ReceivePage() {
       router.push(`/card/${data.match_id}`);
     } catch (e) {
       console.error(e);
-      setMessage("サーバーエラーが発生しました");
+      setMessage('サーバーエラーが発生しました');
     } finally {
       setLoading(false);
     }
@@ -56,7 +58,9 @@ export default function ReceivePage() {
       {message && <p className="mb-4">{message}</p>}
       {card && <CardDisplay card={card} />}
       <div className="mt-4">
-        <Button onClick={claim} disabled={loading}>{loading ? "待機中…" : "もう一度受け取る"}</Button>
+        <Button onClick={claim} disabled={loading}>
+          {loading ? '待機中…' : 'もう一度受け取る'}
+        </Button>
       </div>
     </div>
   );

@@ -1,8 +1,8 @@
-"use client";
+'use client';
 
-import React, { useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Heart } from "lucide-react";
+import React, { useState } from 'react';
+import { Button } from '@/components/ui/button';
+import { Heart } from 'lucide-react';
 
 type Props = {
   matchId: string;
@@ -16,11 +16,11 @@ export default function LikeButton({ matchId }: Props) {
     if (liked || loading) return;
     setLoading(true);
     try {
-      const res = await fetch(`/api/like/${matchId}`, { method: "POST" });
+      const res = await fetch(`/api/like/${matchId}`, { method: 'POST' });
       if (res.ok) {
         setLiked(true);
       } else {
-        console.error("like failed", await res.text());
+        console.error('like failed', await res.text());
       }
     } catch (e) {
       console.error(e);
@@ -30,8 +30,12 @@ export default function LikeButton({ matchId }: Props) {
   }
 
   return (
-    <Button variant={liked ? "secondary" : "default"} onClick={handleLike} disabled={liked || loading}>
-      <Heart className="mr-2" /> {liked ? "いいね済み" : "いいね"}
+    <Button
+      variant={liked ? 'secondary' : 'default'}
+      onClick={handleLike}
+      disabled={liked || loading}
+    >
+      <Heart className="mr-2" /> {liked ? 'いいね済み' : 'いいね'}
     </Button>
   );
 }

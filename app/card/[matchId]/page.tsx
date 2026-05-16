@@ -1,19 +1,29 @@
-import React from "react";
-import type { Params } from "next/dist/shared/lib/router/utils/route-matcher";
-import { supabaseAdmin } from "@/lib/supabase/server";
-import CardDisplay from "@/components/CardDisplay";
-import LikeButton from "@/components/LikeButton";
+import React from 'react';
+import type { Params } from 'next/dist/shared/lib/router/utils/route-matcher';
+import { supabaseAdmin } from '@/lib/supabase/server';
+import CardDisplay from '@/components/CardDisplay';
+import LikeButton from '@/components/LikeButton';
 
-type Props = { params: { matchId: string } };
-
-export default async function Page({ params }: Props) {
-  const { matchId } = params;
+export default async function Page({
+  params,
+}: {
+  params: { matchId: string } | Promise<{ matchId: string }>;
+}) {
+  const resolvedParams = await params;
+  const { matchId } = resolvedParams;
+  if (!supabaseAdmin) {
+    return (
+      <div className="p-6">
+        Supabase が設定されていません（環境変数を確認してください）
+      </div>
+    );
+  }
 
   // match 情報を取得
   const { data: matchData, error: matchError } = await supabaseAdmin
-    .from("matches")
-    .select("*")
-    .eq("id", matchId)
+    .from('matches')
+    .select('*')
+    .eq('id', matchId)
     .single();
 
   if (matchError || !matchData) {
@@ -22,9 +32,9 @@ export default async function Page({ params }: Props) {
 
   const cardId = matchData.card_id;
   const { data: cardData, error: cardError } = await supabaseAdmin
-    .from("cards")
-    .select("*")
-    .eq("id", cardId)
+    .from('cards')
+    .select('*')
+    .eq('id', cardId)
     .single();
 
   if (cardError || !cardData) {
