@@ -14,7 +14,8 @@ export async function POST(request: NextRequest) {
   try {
     // リクエストボディ（ブラウザから送られてきた JSON）を取得
     const body = await request.json();
-    const { oshi_name, description, tags, external_url, image_path } = body;
+    // card_id: フォームで事前生成した UUID。Storage パスと一致させるために受け取る
+    const { card_id, oshi_name, description, tags, external_url, image_path } = body;
 
     // 送信者トークンをヘッダーから取得
     // ブラウザ側で localStorage に保存した UUID を X-Sender-Token ヘッダーで送ってもらう
@@ -40,6 +41,8 @@ export async function POST(request: NextRequest) {
     const { data, error } = await supabaseAdmin
       .from("cards")
       .insert({
+        // card_id が渡されていれば使う（画像パスと一致させるため）
+        ...(card_id ? { id: card_id } : {}),
         sender_token: senderToken,
         oshi_name: oshi_name.trim(),
         description: description?.trim() || null,

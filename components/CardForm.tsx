@@ -1,7 +1,4 @@
-"use client"; // フォームの入力状態を管理するのでブラウザで動く
-
-// 推しカードの作成フォーム
-// 入力内容を useState で管理し、送信時に /api/cards を呼び出す
+"use client";
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
@@ -10,19 +7,21 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { TagInput } from "@/components/TagInput";
+import { ImageUploader } from "@/components/ImageUploader";
 import { useSenderStore } from "@/store/senderStore";
 import type { CardFormData } from "@/types";
 
 export function CardForm() {
-  // useRouter: ページ遷移に使う Next.js のフック
   const router = useRouter();
-
-  // Zustand ストアから匿名ID（送信者トークン）を取得
   const senderToken = useSenderStore((state) => state.token);
 
-  // フォームの入力値を管理する state
-  // 【useState とは】
-  //   コンポーネント内の「変数」。値が変わると画面が自動で再描画される。
+  // カード送信前に UUID を決めておく
+  // 【なぜ先に決めるか】
+  //   画像のアップロード先パスに card_id を使うため。
+  //   "cards/{card_id}/image.webp" というパスでStorageに保存するので、
+  //   フォーム送信より前に card_id が必要になる。
+  const [cardId] = useState(() => crypto.randomUUID());
+
   const [formData, setFormData] = useState<CardFormData>({
     oshi_name: "",
     description: "",
@@ -31,35 +30,34 @@ export function CardForm() {
     image_file: null,
   });
 
-  // 送信中かどうか（二重送信防止・ボタンの無効化に使う）
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  // アップロード済み画像の Storage パス（例: "cards/abc-123/image.webp"）
+  // null = まだ画像が選ばれていない
+  const [imagePath, setImagePath] = useState<string | null>(null);
 
-  // エラーメッセージ
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // フォーム送信処理
   const handleSubmit = async (e: React.FormEvent) => {
-    // e.preventDefault(): ブラウザのデフォルト動作（ページリロード）を止める
     e.preventDefault();
     setError(null);
     setIsSubmitting(true);
 
     try {
-      // /api/cards に POST リクエストを送る
-      // fetch: ブラウザ標準のHTTPリクエスト関数
       const response = await fetch("/api/cards", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          // 匿名IDをヘッダーに付けてサーバーに送る
           "X-Sender-Token": senderToken,
         },
-        // body: リクエストに含めるデータ（JSON文字列に変換して送る）
         body: JSON.stringify({
+          // 事前に生成した card_id を指定（Storage のパスと一致させる）
+          card_id: cardId,
           oshi_name: formData.oshi_name,
           description: formData.description,
           tags: formData.tags,
           external_url: formData.external_url,
+          // アップロード済みなら Storage パスを送る、なければ null
+          image_path: imagePath,
         }),
       });
 
@@ -69,15 +67,11 @@ export function CardForm() {
       }
 
       const data = await response.json();
-
-      // 成功したら待機画面へ遷移
-      // router.push: JavaScript でページ遷移する（ブラウザのURLが変わる）
       router.push(`/send/waiting/${data.card_id}`);
 
     } catch (e) {
       setError(e instanceof Error ? e.message : "エラーが発生しました");
     } finally {
-      // finally: 成功・失敗どちらでも必ず実行される
       setIsSubmitting(false);
     }
   };
@@ -85,16 +79,23 @@ export function CardForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
 
+      {/* 推しの画像 */}
+      <div className="space-y-2">
+        <Label>推しの画像（任意）</Label>
+        <ImageUploader
+          cardId={cardId}
+          onUpload={(path) => setImagePath(path)}
+          onError={(msg) => setError(msg)}
+        />
+      </div>
+
       {/* 推しの名前 */}
       <div className="space-y-2">
         <Label htmlFor="oshi_name">推しの名前 *</Label>
         <Input
           id="oshi_name"
           value={formData.oshi_name}
-          onChange={(e) =>
-            // スプレッド構文で既存の値を保持しつつ、oshi_name だけ更新
-            setFormData({ ...formData, oshi_name: e.target.value })
-          }
+          onChange={(e) => setFormData({ ...formData, oshi_name: e.target.value })}
           placeholder="例: 春日野穹"
           required
           maxLength={50}
@@ -107,14 +108,11 @@ export function CardForm() {
         <Textarea
           id="description"
           value={formData.description}
-          onChange={(e) =>
-            setFormData({ ...formData, description: e.target.value })
-          }
+          onChange={(e) => setFormData({ ...formData, description: e.target.value })}
           placeholder="推しの魅力を書いてください..."
           rows={4}
           maxLength={500}
         />
-        {/* 文字数カウンター */}
         <p className="text-xs text-muted-foreground text-right">
           {formData.description.length} / 500
         </p>
@@ -139,25 +137,14 @@ export function CardForm() {
           id="external_url"
           type="url"
           value={formData.external_url}
-          onChange={(e) =>
-            setFormData({ ...formData, external_url: e.target.value })
-          }
+          onChange={(e) => setFormData({ ...formData, external_url: e.target.value })}
           placeholder="https://..."
         />
       </div>
 
-      {/* エラー表示 */}
-      {error && (
-        <p className="text-sm text-destructive">{error}</p>
-      )}
+      {error && <p className="text-sm text-destructive">{error}</p>}
 
-      {/* 送信ボタン */}
-      <Button
-        type="submit"
-        className="w-full"
-        // 送信中はボタンを無効化して二重送信を防ぐ
-        disabled={isSubmitting}
-      >
+      <Button type="submit" className="w-full" disabled={isSubmitting}>
         {isSubmitting ? "送信中..." : "推しを送る 🍶"}
       </Button>
     </form>
