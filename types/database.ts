@@ -1,14 +1,10 @@
-// Supabase が生成する DB の型定義
-// 本来は `supabase gen types typescript` コマンドで自動生成するが、
-// Supabase プロジェクトを作成後に実行する。
-// ここでは手動で定義しておき、プロジェクト作成後に差し替える。
+// Supabase クライアントが必要とする DB の型定義
+// supabase-js の新しいバージョンでは Relationships / Views / Enums なども必要
 
 export type Database = {
   public: {
     Tables: {
-      // cards テーブル
       cards: {
-        // DB から取得したときの型（SELECT の結果）
         Row: {
           id: string;
           sender_token: string;
@@ -21,9 +17,8 @@ export type Database = {
           created_at: string;
           expires_at: string;
         };
-        // INSERT するときに渡せる型
         Insert: {
-          id?: string;           // ? は省略可能（省略するとDBがデフォルト値を使う）
+          id?: string;
           sender_token: string;
           oshi_name: string;
           description?: string | null;
@@ -34,7 +29,6 @@ export type Database = {
           created_at?: string;
           expires_at?: string;
         };
-        // UPDATE するときに渡せる型（全フィールドが省略可能）
         Update: {
           id?: string;
           sender_token?: string;
@@ -47,8 +41,9 @@ export type Database = {
           created_at?: string;
           expires_at?: string;
         };
+        // supabase-js v2 が必要とするフィールド（外部キー関係の定義）
+        Relationships: [];
       };
-      // matches テーブル
       matches: {
         Row: {
           id: string;
@@ -71,15 +66,19 @@ export type Database = {
           liked?: boolean;
           matched_at?: string;
         };
+        Relationships: [];
       };
     };
-    // DB の関数（ストアドプロシージャ）の型
+    // ビュー（今回は使わないが supabase-js が要求するので空で定義）
+    Views: Record<string, never>;
     Functions: {
-      // claim_random_card 関数（マッチング処理）
       claim_random_card: {
         Args: { p_recipient_token: string };
         Returns: Array<{ match_id: string; card_id: string }>;
       };
     };
+    // ENUM 型（今回は使わない）
+    Enums: Record<string, never>;
+    CompositeTypes: Record<string, never>;
   };
 };
