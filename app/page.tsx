@@ -1,24 +1,28 @@
-import Link from 'next/link';
-import React from 'react';
+import Link from "next/link";
 
 export default function HomePage() {
   return (
-    <div className="max-w-2xl mx-auto py-20 px-4 text-center">
-      <h1 className="text-3xl font-bold mb-8">Oshi Share</h1>
-      <div className="flex gap-4 justify-center">
+    <main className="min-h-screen flex flex-col items-center justify-center bg-background gap-8">
+      <div className="text-center space-y-2">
+        <div className="text-6xl">🍶</div>
+        <h1 className="text-3xl font-bold">推しシェア</h1>
+        <p className="text-muted-foreground">あなたの推しをランダムな誰かに届けよう</p>
+      </div>
+
+      <div className="flex flex-col gap-4 w-full max-w-xs">
         <Link
           href="/send"
-          className="inline-block px-6 py-3 rounded-lg bg-primary text-white"
+          className="flex items-center justify-center h-14 rounded-full bg-foreground text-background font-medium text-lg hover:opacity-80 transition-opacity"
         >
-          送る
+          推しを送る 📨
         </Link>
         <Link
           href="/receive"
-          className="inline-block px-6 py-3 rounded-lg border"
+          className="flex items-center justify-center h-14 rounded-full border-2 border-foreground font-medium text-lg hover:bg-muted transition-colors"
         >
-          受け取る
+          推しを受け取る 🎁
         </Link>
       </div>
-    </div>
+    </main>
   );
 }
