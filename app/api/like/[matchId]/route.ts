@@ -1,14 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { supabaseAdmin } from '@/lib/supabase/server';
 
+// Next.js 15 では動的ルートのパラメータが Promise になった
+// { params }: { params: Promise<{ matchId: string }> } という形で受け取る
 export async function POST(
   request: NextRequest,
-  { params }: { params?: { matchId?: string } } = {},
+  { params }: { params: Promise<{ matchId: string }> },
 ) {
   try {
-    const url = new URL(request.url);
-    const pathSegments = url.pathname.split('/').filter(Boolean);
-    const matchId = params?.matchId || pathSegments[pathSegments.length - 1];
+    // await で Promise を解決してから matchId を取得する
+    const { matchId } = await params;
 
     if (!matchId) {
       return NextResponse.json(
@@ -24,7 +25,7 @@ export async function POST(
       );
     }
 
-    const { data, error } = await supabaseAdmin
+    const { error } = await supabaseAdmin
       .from('matches')
       .update({ liked: true })
       .eq('id', matchId);

@@ -1,13 +1,12 @@
-import React from 'react';
-import type { Params } from 'next/dist/shared/lib/router/utils/route-matcher';
 import { supabaseAdmin } from '@/lib/supabase/server';
 import CardDisplay from '@/components/CardDisplay';
 import LikeButton from '@/components/LikeButton';
 
+// Next.js 15 では params は Promise なので await して使う
 export default async function Page({
   params,
 }: {
-  params: { matchId: string } | Promise<{ matchId: string }>;
+  params: Promise<{ matchId: string }>;
 }) {
   const resolvedParams = await params;
   const { matchId } = resolvedParams;
