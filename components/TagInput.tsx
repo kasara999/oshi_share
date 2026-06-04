@@ -1,85 +1,95 @@
 "use client"; // このコンポーネントはブラウザで動く（ユーザー操作を扱うため）
 
-// タグの入力・追加・削除を管理するコンポーネント
-// 使い方: テキストを入力して Enter または「,」で区切るとタグが追加される
+// タグ選択コンポーネント
+// あらかじめ用意されたタグの中から最大3つまで選べる
 //
 // 【Props とは】
 //   コンポーネントに外から渡すデータ。
-//   tags: 現在のタグ配列（親が管理）
+//   tags: 現在選択中のタグ配列（親が管理）
 //   onChange: タグが変わったときに親へ通知する関数
 
-import { useState, KeyboardEvent } from "react";
-import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { X } from "lucide-react";
 
 type Props = {
   tags: string[];
   onChange: (tags: string[]) => void;
 };
 
+// 選べるタグの定義
+// グループごとにまとめておくと UI で区切り線を出しやすい
+const TAG_GROUPS = [
+  {
+    label: "ジャンル",
+    tags: ["ゲーム", "アニメ", "漫画", "VTuber", "俳優", "歌手", "偉人", "作家", "作曲家", "アイドル"],
+  },
+  {
+    label: "属性",
+    tags: ["男性", "女性", "2次元", "3次元"],
+  },
+  {
+    label: "印象",
+    tags: ["かっこいい", "かわいい"],
+  },
+];
+
+const MAX_TAGS = 3; // 最大選択数
+
 export function TagInput({ tags, onChange }: Props) {
-  // inputValue: テキストボックスに今入力されている文字
-  const [inputValue, setInputValue] = useState("");
-
-  // タグを追加する処理
-  const addTag = () => {
-    const trimmed = inputValue.trim();
-    // 空 or すでに同じタグがある場合は追加しない
-    if (!trimmed || tags.includes(trimmed)) {
-      setInputValue("");
-      return;
+  // タグをクリックしたとき: 選択中なら外し、未選択なら追加（ただし上限3つ）
+  const toggleTag = (tag: string) => {
+    if (tags.includes(tag)) {
+      // すでに選択中 → 外す
+      onChange(tags.filter((t) => t !== tag));
+    } else if (tags.length < MAX_TAGS) {
+      // 上限未満 → 追加
+      onChange([...tags, tag]);
     }
-    // 親コンポーネントに新しいタグ配列を渡す
-    onChange([...tags, trimmed]);
-    setInputValue(""); // 入力欄をリセット
-  };
-
-  // キーボード操作: Enter か , (カンマ) でタグを追加
-  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    if (e.key === "Enter" || e.key === ",") {
-      e.preventDefault(); // Enter でフォームが送信されるのを防ぐ
-      addTag();
-    }
-    // Backspace で入力欄が空のとき、最後のタグを削除
-    if (e.key === "Backspace" && inputValue === "" && tags.length > 0) {
-      onChange(tags.slice(0, -1)); // 最後の要素を除いた配列を渡す
-    }
-  };
-
-  // タグを削除する処理
-  const removeTag = (tagToRemove: string) => {
-    // filter: 削除したいタグ以外だけ残した新しい配列を作る
-    onChange(tags.filter((tag) => tag !== tagToRemove));
+    // 上限に達していて未選択のタグはクリックしても何もしない
   };
 
   return (
-    <div className="flex flex-wrap gap-2 p-2 border rounded-md min-h-10 focus-within:ring-2 focus-within:ring-ring">
-      {/* 既存のタグを一覧表示 */}
-      {tags.map((tag) => (
-        <Badge key={tag} variant="secondary" className="gap-1 text-sm">
-          {tag}
-          {/* × ボタンでタグを削除 */}
-          <button
-            type="button" // type="button" がないと form の submit が発火してしまう
-            onClick={() => removeTag(tag)}
-            className="hover:text-destructive"
-          >
-            <X className="h-3 w-3" />
-          </button>
-        </Badge>
-      ))}
+    <div className="space-y-3">
+      {/* 上限に近づいたら案内を表示 */}
+      <p className="text-xs text-muted-foreground">
+        最大 {MAX_TAGS} つまで選択できます（{tags.length}/{MAX_TAGS}）
+      </p>
 
-      {/* 新しいタグの入力欄 */}
-      <Input
-        type="text"
-        value={inputValue}
-        onChange={(e) => setInputValue(e.target.value)}
-        onKeyDown={handleKeyDown}
-        onBlur={addTag} // 入力欄からフォーカスが外れたときも追加
-        placeholder={tags.length === 0 ? "タグを入力（Enter で追加）" : ""}
-        className="border-none shadow-none focus-visible:ring-0 flex-1 min-w-24 h-auto p-0"
-      />
+      {TAG_GROUPS.map((group) => (
+        <div key={group.label}>
+          {/* グループ名 */}
+          <p className="text-xs text-muted-foreground mb-1.5">{group.label}</p>
+
+          {/* タグ一覧: クリックで選択・解除 */}
+          <div className="flex flex-wrap gap-2">
+            {group.tags.map((tag) => {
+              const isSelected = tags.includes(tag);
+              // 上限に達していて未選択のタグはグレーアウト
+              const isDisabled = !isSelected && tags.length >= MAX_TAGS;
+
+              return (
+                <button
+                  key={tag}
+                  type="button" // type="button" を明示しないと form の submit が発火する
+                  onClick={() => toggleTag(tag)}
+                  disabled={isDisabled}
+                  className="focus:outline-none"
+                >
+                  <Badge
+                    variant={isSelected ? "default" : "outline"}
+                    className={`
+                      cursor-pointer transition-colors
+                      ${isDisabled ? "opacity-40 cursor-not-allowed" : "hover:bg-primary/10"}
+                      ${isSelected ? "hover:bg-primary/80" : ""}
+                    `}
+                  >
+                    {tag}
+                  </Badge>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

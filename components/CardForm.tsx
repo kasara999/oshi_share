@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { TagInput } from "@/components/TagInput";
 import { ImageUploader } from "@/components/ImageUploader";
+import { Send } from "lucide-react";
 import { useSenderStore } from "@/store/senderStore";
 import type { CardFormData } from "@/types";
 
@@ -79,24 +80,16 @@ export function CardForm() {
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
 
-      {/* 推しの画像 */}
-      <div className="space-y-2">
-        <Label>推しの画像（任意）</Label>
-        <ImageUploader
-          cardId={cardId}
-          onUpload={(path) => setImagePath(path)}
-          onError={(msg) => setError(msg)}
-        />
-      </div>
+      
 
       {/* 推しの名前 */}
       <div className="space-y-2">
-        <Label htmlFor="oshi_name">推しの名前 *</Label>
+        <Label htmlFor="oshi_name">あなたの推しは？ *</Label>
         <Input
           id="oshi_name"
           value={formData.oshi_name}
           onChange={(e) => setFormData({ ...formData, oshi_name: e.target.value })}
-          placeholder="例: 春日野穹"
+          placeholder="例: 竈門炭治郎"
           required
           maxLength={50}
         />
@@ -118,6 +111,17 @@ export function CardForm() {
         </p>
       </div>
 
+      {/* 推しの画像 */}
+      <div className="space-y-2">
+        <Label>推しの画像（任意）</Label>
+        <ImageUploader
+          cardId={cardId}
+          onUpload={(path) => { setError(null); setImagePath(path); }}
+          onError={(msg) => setError(msg)}
+        />
+      </div>
+
+
       {/* タグ */}
       <div className="space-y-2">
         <Label>タグ</Label>
@@ -126,26 +130,14 @@ export function CardForm() {
           onChange={(tags) => setFormData({ ...formData, tags })}
         />
         <p className="text-xs text-muted-foreground">
-          Enter または , で追加。例: 女性、ゲーム、グラブル
         </p>
       </div>
 
-      {/* 関連URL */}
-      <div className="space-y-2">
-        <Label htmlFor="external_url">関連URL（任意）</Label>
-        <Input
-          id="external_url"
-          type="url"
-          value={formData.external_url}
-          onChange={(e) => setFormData({ ...formData, external_url: e.target.value })}
-          placeholder="https://..."
-        />
-      </div>
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
       <Button type="submit" className="w-full" disabled={isSubmitting}>
-        {isSubmitting ? "送信中..." : "推しを送る 🍶"}
+        {isSubmitting ? "送信中..." : <>推しを送る<Send className="ml-2 h-4 w-4" /></>}
       </Button>
     </form>
   );

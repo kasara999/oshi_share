@@ -1,4 +1,5 @@
 import Link from "next/link";
+import Image from "next/image";
 
 export default function HomePage() {
   return (
@@ -6,12 +7,12 @@ export default function HomePage() {
 
       {/* ロゴ・キャッチコピー */}
       <div className="text-center mb-14">
-        <p className="text-5xl mb-6">🍶</p>
+        <p className="text-5xl mb-6"><Image src="/oshi_share_icon2.png" width={500} height={500} alt="ロゴ" /></p>
         <h1 className="text-4xl font-bold tracking-tight text-zinc-900 mb-3">
-          推しシェア
+          推し便り
         </h1>
-        <p className="text-zinc-400 text-sm leading-relaxed">
-          あなたの推しを、ランダムな誰かへ。
+        <p className="text-zinc-400 text-base leading-relaxed">
+          あなたの推しを、届けよう。
         </p>
       </div>
 

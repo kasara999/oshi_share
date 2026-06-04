@@ -113,7 +113,7 @@ export function ImageUploader({ cardId, onUpload, onError }: Props) {
         body: JSON.stringify({ card_id: cardId }),
       });
 
-      if (!res.ok) throw new Error("アップロードURLの取得に失敗しました");
+      if (!res.ok) throw new Error("画像のアップロードに失敗しました");
       const { upload_url, image_path } = await res.json();
 
       // 4. Supabase Storage へ直接アップロード（PUT リクエスト）
@@ -183,7 +183,7 @@ export function ImageUploader({ cardId, onUpload, onError }: Props) {
       ) : (
         // アップロード前：ドロップゾーン
         <div className="flex flex-col items-center justify-center gap-2 py-10 text-muted-foreground">
-          <span className="text-4xl">🖼️</span>
+          <span className="text-4xl"></span>
           <p className="text-sm font-medium">
             {isUploading ? "アップロード中..." : "画像をドロップ or クリック"}
           </p>

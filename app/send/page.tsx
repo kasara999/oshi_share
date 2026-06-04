@@ -17,9 +17,9 @@ export default function SendPage() {
 
         {/* ヘッダー */}
         <div className="mb-8 text-center">
-          <h1 className="text-2xl font-bold">推しを送る</h1>
+          <h1 className="text-2xl font-bold">推しを届ける</h1>
           <p className="mt-2 text-sm text-muted-foreground">
-            あなたの推しをランダムな誰かに届けましょう
+            あなたの推しをまだ見ぬ誰かへ
           </p>
         </div>
 
