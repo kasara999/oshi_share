@@ -38,7 +38,7 @@ export default function WaitingPage() {
         <div className="text-6xl animate-bounce">✉️</div>
         <h1 className="text-xl font-bold text-zinc-900">推しをお届け中...</h1>
         <p className="text-sm text-zinc-400">
-          あなたの推しを送った誰かとマッチするのを待っています
+         マッチするまでお待ち下さい
         </p>
       </div>
     </main>
