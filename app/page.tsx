@@ -24,12 +24,6 @@ export default function HomePage() {
         >
           推しを送る
         </Link>
-        <Link
-          href="/receive"
-          className="flex items-center justify-center gap-2 h-12 rounded-xl border border-zinc-200 text-zinc-900 text-sm font-medium hover:bg-zinc-50 transition-colors"
-        >
-          推しを受け取る
-        </Link>
       </div>
 
       {/* フッター */}

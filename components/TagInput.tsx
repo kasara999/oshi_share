@@ -1,22 +1,21 @@
-"use client"; // このコンポーネントはブラウザで動く（ユーザー操作を扱うため）
+"use client";
 
 // タグ選択コンポーネント
-// あらかじめ用意されたタグの中から最大3つまで選べる
-//
-// 【Props とは】
-//   コンポーネントに外から渡すデータ。
-//   tags: 現在選択中のタグ配列（親が管理）
-//   onChange: タグが変わったときに親へ通知する関数
+// ・定義済みタグ: バッジをクリックして選択/解除
+// ・カスタムタグ: テキストを入力して「追加」ボタンで追加
+// ・他の人のタグ検索: 入力中にDBから候補を表示
 
+import { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { X, Search } from "lucide-react";
 
 type Props = {
   tags: string[];
   onChange: (tags: string[]) => void;
 };
 
-// 選べるタグの定義
-// グループごとにまとめておくと UI で区切り線を出しやすい
 const TAG_GROUPS = [
   {
     label: "ジャンル",
@@ -32,45 +31,100 @@ const TAG_GROUPS = [
   },
 ];
 
-const MAX_TAGS = 3; // 最大選択数
+const MAX_TAGS = 5;
+const ALL_PREDEFINED = TAG_GROUPS.flatMap((g) => g.tags);
 
 export function TagInput({ tags, onChange }: Props) {
-  // タグをクリックしたとき: 選択中なら外し、未選択なら追加（ただし上限3つ）
-  const toggleTag = (tag: string) => {
+  const [input, setInput] = useState("");
+  const [searchResults, setSearchResults] = useState<string[]>([]);
+  const [showResults, setShowResults] = useState(false);
+
+  const customTags = tags.filter((t) => !ALL_PREDEFINED.includes(t));
+  const isAtLimit = tags.length >= MAX_TAGS;
+
+  // 定義済みタグのクリック: 選択/解除
+  const togglePredefined = (tag: string) => {
     if (tags.includes(tag)) {
-      // すでに選択中 → 外す
       onChange(tags.filter((t) => t !== tag));
-    } else if (tags.length < MAX_TAGS) {
-      // 上限未満 → 追加
+    } else if (!isAtLimit) {
       onChange([...tags, tag]);
     }
-    // 上限に達していて未選択のタグはクリックしても何もしない
   };
+
+  // 「追加」ボタン: 入力テキストをタグとして追加
+  const handleAdd = () => {
+    const trimmed = input.trim();
+    if (!trimmed || tags.includes(trimmed) || isAtLimit) return;
+    onChange([...tags, trimmed]);
+    setInput("");
+    setShowResults(false);
+  };
+
+  // 候補から選択
+  const selectResult = (tag: string) => {
+    if (tags.includes(tag) || isAtLimit) return;
+    onChange([...tags, tag]);
+    setInput("");
+    setShowResults(false);
+  };
+
+  // 入力が変わったら300ms後にDB検索
+  useEffect(() => {
+    if (input.trim().length < 1) {
+      setSearchResults([]);
+      setShowResults(false);
+      return;
+    }
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/tags?q=${encodeURIComponent(input)}`);
+        const data = await res.json();
+        // すでに選択中のタグは除外して表示
+        setSearchResults((data.tags ?? []).filter((t: string) => !tags.includes(t)));
+        setShowResults(true);
+      } catch {
+        setSearchResults([]);
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [input, tags]);
 
   return (
     <div className="space-y-3">
-      {/* 上限に近づいたら案内を表示 */}
       <p className="text-xs text-muted-foreground">
         最大 {MAX_TAGS} つまで選択できます（{tags.length}/{MAX_TAGS}）
       </p>
 
+      {/* 選択中のカスタムタグ */}
+      {customTags.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          {customTags.map((tag) => (
+            <Badge key={tag} variant="default" className="gap-1">
+              {tag}
+              <button
+                type="button"
+                onClick={() => onChange(tags.filter((t) => t !== tag))}
+              >
+                <X className="h-3 w-3" />
+              </button>
+            </Badge>
+          ))}
+        </div>
+      )}
+
+      {/* 定義済みタググループ */}
       {TAG_GROUPS.map((group) => (
         <div key={group.label}>
-          {/* グループ名 */}
           <p className="text-xs text-muted-foreground mb-1.5">{group.label}</p>
-
-          {/* タグ一覧: クリックで選択・解除 */}
           <div className="flex flex-wrap gap-2">
             {group.tags.map((tag) => {
               const isSelected = tags.includes(tag);
-              // 上限に達していて未選択のタグはグレーアウト
-              const isDisabled = !isSelected && tags.length >= MAX_TAGS;
-
+              const isDisabled = !isSelected && isAtLimit;
               return (
                 <button
                   key={tag}
-                  type="button" // type="button" を明示しないと form の submit が発火する
-                  onClick={() => toggleTag(tag)}
+                  type="button"
+                  onClick={() => togglePredefined(tag)}
                   disabled={isDisabled}
                   className="focus:outline-none"
                 >
@@ -90,6 +144,63 @@ export function TagInput({ tags, onChange }: Props) {
           </div>
         </div>
       ))}
+
+      {/* カスタムタグ入力 */}
+      <div className="space-y-1.5">
+        <p className="text-xs text-muted-foreground">自分で追加 / 他の人のタグを検索</p>
+
+        {/* 入力欄 + 追加ボタン */}
+        <div className="flex gap-2">
+          <div className="relative flex-1">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground pointer-events-none" />
+            <Input
+              type="text"
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={(e) => {
+                // Enterキーでフォームが送信されるのを防ぐ
+                if (e.key === "Enter") e.preventDefault();
+                if (e.key === "Escape") setShowResults(false);
+              }}
+              onBlur={() => setTimeout(() => setShowResults(false), 150)}
+              onFocus={() => searchResults.length > 0 && setShowResults(true)}
+              placeholder={isAtLimit ? "上限（3つ）に達しました" : "タグを入力..."}
+              disabled={isAtLimit}
+              className="pl-8"
+            />
+          </div>
+          <Button
+            type="button"
+            variant="outline"
+            onClick={handleAdd}
+            disabled={isAtLimit || !input.trim() || tags.includes(input.trim())}
+          >
+            追加
+          </Button>
+        </div>
+
+        {/* 他の人のタグ候補ドロップダウン */}
+        {showResults && searchResults.length > 0 && (
+          <div className="border rounded-md shadow-sm bg-background overflow-hidden">
+            <p className="px-3 py-1.5 text-xs text-muted-foreground border-b bg-muted/50">
+              他の人が使っているタグ
+            </p>
+            <div className="max-h-40 overflow-y-auto">
+              {searchResults.map((result) => (
+                <button
+                  key={result}
+                  type="button"
+                  onMouseDown={(e) => e.preventDefault()}
+                  onClick={() => selectResult(result)}
+                  className="w-full text-left px-3 py-2 text-sm hover:bg-muted transition-colors"
+                >
+                  {result}
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

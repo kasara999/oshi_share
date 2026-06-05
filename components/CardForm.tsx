@@ -68,7 +68,13 @@ export function CardForm() {
       }
 
       const data = await response.json();
-      router.push(`/send/waiting/${data.card_id}`);
+      // マッチ相手がいた → 即座にマッチ画面へ
+      // いなかった → 待機画面で誰かが来るのを待つ
+      if (data.match_id) {
+        router.push(`/match/${data.match_id}?myCard=${data.card_id}`);
+      } else {
+        router.push(`/send/waiting/${data.card_id}`);
+      }
 
     } catch (e) {
       setError(e instanceof Error ? e.message : "エラーが発生しました");
@@ -102,7 +108,7 @@ export function CardForm() {
           id="description"
           value={formData.description}
           onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-          placeholder="推しの魅力を書いてください..."
+          placeholder="推しの魅力を言葉にしてください"
           rows={4}
           maxLength={500}
         />

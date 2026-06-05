@@ -21,9 +21,10 @@ export type CardStatus = "waiting" | "matched" | "expired";
 // ── マッチング結果 ────────────────────────────────────────
 export type Match = {
   id: string;
-  card_id: string;           // どのカードとマッチしたか
-  recipient_token: string;   // 受け取った人の匿名ID
-  liked: boolean;            // いいねしたかどうか
+  card_id_1: string;   // 待機していたカードのID
+  card_id_2: string;   // 後からマッチしたカードのID
+  liked_1: boolean;    // card_1 の送り主が card_2 をいいねしたか
+  liked_2: boolean;    // card_2 の送り主が card_1 をいいねしたか
   matched_at: string;
 };
 
@@ -54,6 +55,7 @@ export type OshiTemplate = {
 // /api/cards のレスポンス
 export type CreateCardResponse = {
   card_id: string;
+  match_id: string | null;  // マッチした場合は match_id、待機中は null
 };
 
 // /api/cards/upload-url のレスポンス
