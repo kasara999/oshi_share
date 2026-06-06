@@ -17,7 +17,7 @@ export async function GET(request: NextRequest) {
       .limit(500);
 
     // 全カードのtagsをフラットにして重複を除いたあと、検索ワードで絞り込む
-    const allTags = [...new Set((data ?? []).flatMap((c) => c.tags ?? []))];
+    const allTags = [...new Set((data ?? []).flatMap((c: { tags: string[] }) => c.tags ?? []))];
     const filtered = allTags
       .filter((t) => t.toLowerCase().includes(q.toLowerCase()))
       .slice(0, 20);
