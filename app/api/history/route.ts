@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ entries: [] });
   }
 
-  const myCardIds = myCards.map((c) => c.id);
+  const myCardIds = myCards.map((c: { id: string }) => c.id);
 
   // 自分のカードが card_id_1 または card_id_2 のマッチを取得
   const { data: matches } = await supabaseAdmin
