@@ -1,88 +1,88 @@
-# 推しシェア
+# Oshi Share
 
-あなたの推しを、届けよう。
+**[日本語版はこちら](README.ja.md)**
 
-匿名でお互いの推しを送り合い、ランダムにマッチングするWebアプリです。
+Share your favorite character or person with a stranger — anonymously.
 
 🔗 **https://oshi-share.vercel.app**
 
 ---
 
-## 制作動機
+## Motivation
 
-見知らぬ人とお互いに好きな音楽を交換するWebサービスを見て、「同じように推しを紹介し合えたら面白いんじゃないか」と思ったのが始まりです。音楽と同じように、推しには「この人のことを誰かに知ってほしい」という気持ちが伴うことが多い。それを匿名で、ランダムな誰かと交換し合える場を作りたいと考えました。
-
----
-
-## コンセプト
-
-- ログイン不要・完全匿名
-- 推しのカードを送ると、同じタイミングで誰かとマッチング
-- お互いの推しを同時に見られる
-- 気に入ったらいいねができる
+I came across a website where strangers exchange their favorite music with each other anonymously. That made me think: what if you could do the same thing with your favorite characters or people? Just like music, there's often a feeling of *"I want someone to know about this person"* behind having a favorite. I wanted to build a space where that feeling can be shared — randomly, anonymously, with someone you've never met.
 
 ---
 
-## 機能
+## Concept
 
-- 推しカード作成（画像・名前・説明・タグ・URL）
-- ランダム双方向マッチング
-- リアルタイムマッチング通知（Supabase Realtime）
-- いいね機能
-- マッチ履歴
-- タグでみんなの推しを検索
+- No login required — fully anonymous
+- Submit a card about your favorite, and get matched with a stranger at the same time
+- Both sides see each other's cards simultaneously
+- Like the card if it resonates with you
 
 ---
 
-## 技術スタック
+## Features
 
-| 役割 | 技術 |
+- Create a card (image, name, description, tags, external URL)
+- Random bidirectional matching
+- Real-time match notification via Supabase Realtime
+- Like functionality
+- Match history
+- Explore others' favorites by tag
+
+---
+
+## Tech Stack
+
+| Role | Technology |
 |---|---|
-| フロントエンド・API | Next.js 15 (App Router, TypeScript) |
+| Frontend & API | Next.js 15 (App Router, TypeScript) |
 | UI | Tailwind CSS / shadcn/ui |
-| データベース | Supabase (PostgreSQL) |
-| ストレージ | Supabase Storage |
-| リアルタイム通信 | Supabase Realtime |
-| 状態管理 | Zustand + localStorage |
-| デプロイ | Vercel |
+| Database | Supabase (PostgreSQL) |
+| Storage | Supabase Storage |
+| Real-time | Supabase Realtime |
+| State management | Zustand + localStorage |
+| Deployment | Vercel |
 
 ---
 
-## 設計のポイント
+## Design Highlights
 
-**レースコンディション対策**
+**Race condition safety**
 
-同時に複数人がマッチングリクエストを送っても同じカードが2人にマッチしないよう、PostgreSQL の `FOR UPDATE SKIP LOCKED` を使ったストアドファンクションで原子的に処理しています。
+Matching is handled atomically by a PostgreSQL stored function using `FOR UPDATE SKIP LOCKED`, ensuring the same card is never matched to two users simultaneously.
 
-**匿名認証**
+**Anonymous identity**
 
-初回アクセス時に UUID を生成して localStorage に保存し、APIリクエスト時に `X-Sender-Token` ヘッダーで送信します。ログイン不要でユーザーを識別できます。
+On first visit, a UUID is generated and stored in `localStorage`. It is sent as an `X-Sender-Token` header on every API request, allowing the server to identify users without any login.
 
-**画像アップロード**
+**Image upload**
 
-Next.js サーバーを経由せず、署名付きURL（Signed URL）を使ってブラウザから Supabase Storage へ直接アップロードします。アップロード前にブラウザ側で WebP 変換・5MB 制限チェックを行います。
+Images are uploaded directly from the browser to Supabase Storage via a signed URL, bypassing the Next.js server. Before upload, the client converts the image to WebP and enforces a 5 MB size limit.
 
-**リアルタイム通知**
+**Real-time notifications**
 
-待機画面では Supabase Realtime で `matches` テーブルを購読し、マッチが成立した瞬間にマッチ画面へ自動遷移します。
+The waiting screen subscribes to the `matches` table via Supabase Realtime and automatically redirects to the match page the moment a match is created.
 
 ---
 
-## ローカルでの起動方法
+## Local Setup
 
-**必要なもの**
-- Node.js 18以上
-- Supabase プロジェクト
+**Requirements**
+- Node.js 18+
+- A Supabase project
 
-**手順**
+**Steps**
 
 ```bash
 git clone https://github.com/kasara999/oshi_share.git
 cd oshi_share
 npm install
 cp .env.local.example .env.local
-# .env.local に Supabase の URL・APIキーを入力
+# Fill in your Supabase URL and API keys in .env.local
 npm run dev
 ```
 
-Supabase のセットアップは `supabase/schema.sql` と `supabase/rls.sql` を SQL Editor で実行してください。
+For the Supabase schema, run `supabase/schema.sql` and `supabase/rls.sql` in the Supabase SQL Editor.
