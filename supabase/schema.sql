@@ -135,10 +135,15 @@ BEGIN
   --                    → 同時アクセスでも安全に異なるカードを取得できる
   SELECT id INTO v_card_id
   FROM cards
-  WHERE status = 'waiting'
-    AND expires_at > now()
-    AND sender_token != p_recipient_token  -- 自分が送ったカードは自分で受け取れない
-  ORDER BY random()                         -- ランダムに1枚選ぶ
+  WHERE sender_token != p_recipient_token
+  ORDER BY                          -- ランダムに1枚選ぶ
+    CASE status
+      WHEN 'waiting' THEN 1
+      WHEN 'matched' THEN 2
+      WHEN 'expired' THEN 3
+      ELSE 4 
+    END ASC,
+    random()  -- 同じ状態のカードが複数ある場合はランダムに選ぶ
   LIMIT 1
   FOR UPDATE SKIP LOCKED;
 
