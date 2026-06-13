@@ -62,21 +62,20 @@ CREATE INDEX idx_cards_sender_token ON cards (sender_token);
 CREATE TABLE matches (
   id               UUID        PRIMARY KEY DEFAULT gen_random_uuid(),
 
-  -- どのカードとマッチしたか（cards.id を参照する外部キー）
+  -- マッチした2枚のカード（cards.id を参照する外部キー）
   -- ON DELETE CASCADE: カードが削除されたらマッチング情報も自動で消える
-  card_id          UUID        NOT NULL REFERENCES cards(id) ON DELETE CASCADE,
+  card_id_1        UUID        NOT NULL REFERENCES cards(id) ON DELETE CASCADE,
+  card_id_2        UUID        NOT NULL REFERENCES cards(id) ON DELETE CASCADE,
 
-  -- 受け取った人の匿名ID
-  recipient_token  TEXT        NOT NULL,
-
-  -- いいねしたかどうか（デフォルトは false = まだいいねしていない）
-  liked            BOOLEAN     NOT NULL DEFAULT false,
+  -- それぞれのカード送信者がいいねしたかどうか
+  liked_1          BOOLEAN     NOT NULL DEFAULT false,
+  liked_2          BOOLEAN     NOT NULL DEFAULT false,
 
   matched_at       TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX idx_matches_recipient_token ON matches (recipient_token);
-CREATE INDEX idx_matches_card_id ON matches (card_id);
+CREATE INDEX idx_matches_card_id_1 ON matches (card_id_1);
+CREATE INDEX idx_matches_card_id_2 ON matches (card_id_2);
 
 
 -- ================================================================
@@ -162,6 +161,42 @@ BEGIN
 
   -- 結果を返す（match_id と card_id の両方を返す）
   RETURN QUERY SELECT v_match_id, v_card_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+
+-- ================================================================
+-- 5. match_with_card 関数（カード送信時の即時マッチング）
+-- ================================================================
+--
+-- カードを送信した直後に、既に待機中のカードがあればその場でマッチさせる。
+-- claim_random_card と同様に FOR UPDATE SKIP LOCKED で競合を防ぐ。
+
+CREATE OR REPLACE FUNCTION match_with_card(p_new_card_id UUID, p_sender_token TEXT)
+RETURNS UUID AS $$
+DECLARE
+  v_waiting_card_id UUID;
+  v_match_id UUID;
+BEGIN
+  SELECT id INTO v_waiting_card_id
+  FROM cards
+  WHERE status = 'waiting'
+    AND expires_at > now()
+    AND sender_token != p_sender_token
+    AND id != p_new_card_id
+  ORDER BY random()
+  LIMIT 1
+  FOR UPDATE SKIP LOCKED;
+
+  IF v_waiting_card_id IS NULL THEN RETURN NULL; END IF;
+
+  UPDATE cards SET status = 'matched' WHERE id IN (v_waiting_card_id, p_new_card_id);
+
+  INSERT INTO matches (card_id_1, card_id_2)
+  VALUES (v_waiting_card_id, p_new_card_id)
+  RETURNING id INTO v_match_id;
+
+  RETURN v_match_id;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
