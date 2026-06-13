@@ -25,7 +25,7 @@ ALTER TABLE matches ENABLE ROW LEVEL SECURITY;
 -- 【なぜ許可するか】
 --   待機画面で「いいねされたか」をリアルタイムで受け取るために
 --   Supabase Realtime が matches テーブルを購読する必要があるから。
---   matches に含まれるデータは UUID とブール値（liked）だけなので
+--   matches に含まれるデータは UUID とブール値（liked_1, liked_2）だけなので
 --   公開しても問題ない。
 --
 -- FOR SELECT       : 読み取りだけ許可（書き込みは不可）

@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { supabaseAdmin } from "@/lib/supabase/server";
+import { containsBlockedWord } from "@/lib/blocklist";
 import type { CreateCardResponse } from "@/types";
 
 // ── バリデーション用ヘルパー ───────────────────────────────
@@ -69,6 +70,12 @@ export async function POST(request: NextRequest) {
 
     // 全フィールドをサーバー側でバリデーション
     // クライアント側の制限（maxLength など）は開発者ツールで迂回できるため
+    const blockedFields = [
+      typeof oshi_name === "string" && containsBlockedWord(oshi_name),
+      typeof description === "string" && containsBlockedWord(description),
+      Array.isArray(tags) && tags.some((t: unknown) => typeof t === "string" && containsBlockedWord(t)),
+    ];
+
     const errors = [
       validateSenderToken(senderToken),
       validateOshiName(oshi_name),
@@ -76,6 +83,7 @@ export async function POST(request: NextRequest) {
       validateTags(tags),
       validateExternalUrl(external_url),
       validateImagePath(image_path),
+      blockedFields.some(Boolean) ? "不適切な表現が含まれています" : null,
     ].filter(Boolean);
 
     if (errors.length > 0) {
